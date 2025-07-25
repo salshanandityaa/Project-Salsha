@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Admin{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Dashboard Admin</h1>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Data Pensiun</h5>
+                <p class="card-text fs-3">{{ stats.total_data }} <i class="fas fa-database float-end"></i></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Sudah Autentikasi</h5>
+                <p class="card-text fs-3">{{ stats.sudah_auten }} <i class="fas fa-check-circle float-end"></i></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Belum Autentikasi</h5>
+                <p class="card-text fs-3">{{ stats.belum_auten }} <i class="fas fa-hourglass-half float-end"></i></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Gagal Autentikasi</h5>
+                <p class="card-text fs-3">{{ stats.gagal_auten }} <i class="fas fa-times-circle float-end"></i></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                Distribusi Status Autentikasi
+            </div>
+            <div class="card-body">
+                {# plot_status_auten_div sudah dibuat di app.py, gunakan itu #}
+                {{ plot_status_auten_div | safe }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                Distribusi Usia Pensiunan
+            </div>
+            <div class="card-body">
+                {# plot_usia_div sudah dibuat di app.py, gunakan itu #}
+                {{ plot_usia_div | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                Laporan Data Terbaru
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Untuk melihat data pensiun yang lebih detail, kunjungi halaman <a href="{{ url_for('reports_page') }}">Laporan Data</a>.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

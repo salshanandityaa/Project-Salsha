@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Manajemen Pengguna - Aplikasi K-Means{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h2 class="mb-4">Manajemen Pengguna</h2>
+
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Tambah Pengguna Baru</h4>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('add_user') }}" method="POST">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="mb-3">
+                    <label for="nama_lengkap" class="form-label">Nama Lengkap</label>
+                    <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email (Opsional)</label>
+                    <input type="email" class="form-control" id="email" name="email">
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Peran</label>
+                    <select class="form-select" id="role" name="role" required> {# Removed onchange="toggleCabangInput()" #}
+                        <option value="Kancab">Kepala Cabang</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+                {# Removed the entire cabangInputGroup div #}
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Tambah Pengguna</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h4 class="mb-0">Daftar Pengguna</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Nama Lengkap</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Cabang</th> {# Tambahkan kolom Cabang #}
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.nama_lengkap if user.nama_lengkap is not none else 'N/A' }}</td>
+                            <td>{{ user.email if user.email is not none else 'N/A' }}</td>
+                            <td>{{ user.role | title }}</td>
+                            <td>{{ user.cabang if user.cabang is not none else 'N/A' }}</td> {# Tampilkan cabang #}
+                            <td>
+                                {% if user.id != current_user.id %}
+                                <form action="{{ url_for('delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengguna {{ user.username }}?');" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i> Hapus</button>
+                                </form>
+                                {% else %}
+                                    <span class="text-muted">Tidak bisa hapus akun sendiri</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">Tidak ada pengguna yang terdaftar.</td> {# Sesuaikan colspan #}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
+    <script>
+        if (document.getElementById('usersTable')) {
+            new simpleDatatables.DataTable("#usersTable");
+        }
+        // Removed toggleCabangInput function as it's no longer needed
+    </script>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+    <!-- Referensi Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        /* Styling tambahan untuk konsistensi */
+        .card {
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+            font-weight: bold;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #e2e6ea;
+        }
+        #plotly-chart {
+            height: 500px; /* Atur tinggi untuk chart */
+            width: 100%; /* Atur lebar untuk chart */
+            margin-top: 1rem; /* Jarak dari elemen di atasnya */
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="mb-4 text-center">Klasterisasi Data Pensiun</h1>
+        </div>
+    </div>
+
+    <!-- Area pesan flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="row">
+                <div class="col-lg-12">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        {% if current_user_role == 'admin' %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    Unggah Data & Konfigurasi Klasterisasi
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('clustering_page') }}">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Pilih File Excel (.xlsx/.xls)</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".xlsx, .xls">
+                            <div class="form-text">Unggah data pensiun Anda untuk dianalisis dan diklasterisasi.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="num_clusters" class="form-label">Jumlah Klaster (K)</label>
+                            <input type="number" class="form-control" id="num_clusters" name="num_clusters" value="{{ num_clusters_display }}" min="2" required>
+                            <div class="form-text">Masukkan jumlah klaster yang diinginkan (minimal 2).</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Pilih Fitur untuk Klasterisasi</label>
+                            {% for feature in clusterable_features %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="features" value="{{ feature.name }}" id="feature_{{ feature.name }}"
+                                        {% if feature.name in selected_features %}checked{% endif %}>
+                                    <label class="form-check-label" for="feature_{{ feature.name }}">
+                                        {{ feature.name.replace('_', ' ').title() }} ({{ feature.type | title }})
+                                    </label>
+                                </div>
+                            {% endfor %}
+                            <div class="form-text">Pilih fitur yang akan digunakan dalam algoritma KMeans.</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Unggah & Jalankan Klasterisasi</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-lg-{% if current_user_role == 'admin' %}6{% else %}12{% endif %} mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    Ringkasan Hasil Klasterisasi Terakhir
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Data yang Dicluster:</strong> {{ stats.total_data }}</p>
+                    <p><strong>Jumlah Klaster (K):</strong> {{ stats.k_value_display }}</p>
+                    <p><strong>Silhouette Score:</strong> {{ stats.silhouette_score_display | default('N/A', true) }} {% if stats.silhouette_score_display %} (Semakin mendekati 1, semakin baik klasterisasi){% endif %}</p>
+                    <p><strong>Tanggal Klasterisasi Terakhir:</strong> {{ stats.tanggal_klasterisasi_display }}</p>
+                    <p><strong>Fitur yang Digunakan:</strong> {{ stats.fitur_digunakan_display }}</p>
+
+                    <h5>Distribusi Status Autentikasi</h5>
+                    <ul>
+                        {% for status, percent in stats.distribusi_status_auten.items() %}
+                            <li>{{ status }}: {{ percent }}%</li>
+                        {% else %}
+                            <li>Tidak ada data.</li>
+                        {% endfor %}
+                    </ul>
+
+                    <h5>Distribusi Jenis Pekerjaan</h5>
+                    <ul>
+                        {% for jenis, percent in stats.distribusi_jenis_pekerjaan.items() %}
+                            <li>{{ jenis }}: {{ percent }}%</li>
+                        {% else %}
+                            <li>Tidak ada data.</li>
+                        {% endfor %}
+                    </ul>
+
+                    <h5>Distribusi Status Pensiun</h5>
+                    <ul>
+                        {% for status, percent in stats.distribusi_status_pensiun.items() %}
+                            <li>{{ status }}: {{ percent }}%</li>
+                        {% else %}
+                            <li>Tidak ada data.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    Visualisasi Klaster
+                </div>
+                <div class="card-body">
+                    <!-- Container untuk Plotly Chart -->
+                    <div id="plotly-chart" style="height: 500px; width: 100%;"></div>
+
+                    <!-- Elemen tersembunyi untuk menyimpan string JSON dari Plotly -->
+                    <script type="application/json" id="plot-data-json-payload">
+                        {{ plot_data_json | safe }}
+                    </script>
+
+                    <!-- Script untuk merender Plotly Chart dari JSON data -->
+                    <script>
+                        // Ambil string JSON dari elemen script tersembunyi
+                        var plotDataJsonString = document.getElementById('plot-data-json-payload').textContent;
+                        var plotDivContent = "{{ plot_div | safe }}"; 
+
+                        if (plotDataJsonString && plotDataJsonString.trim() !== "") {
+                            try {
+                                var plotData = JSON.parse(plotDataJsonString); 
+                                Plotly.newPlot('plotly-chart', plotData.data, plotData.layout);
+                            } catch (e) {
+                                console.error("Error parsing plot JSON data or rendering plot:", e);
+                                document.getElementById('plotly-chart').innerHTML = "<p class='text-center text-danger'>Gagal merender plot. Periksa konsol browser untuk detail.</p>";
+                            }
+                        } else if (plotDivContent.trim() !== "") {
+                            document.getElementById('plotly-chart').innerHTML = plotDivContent;
+                        } else {
+                            document.getElementById('plotly-chart').innerHTML = "<p class='text-center text-muted'>Plot akan muncul di sini setelah Anda mengunggah data dan menjalankan klasterisasi dengan fitur yang bervariasi.</p>";
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    Detail Klaster
+                </div>
+                <div class="card-body">
+                    {% if cluster_details %}
+                        <div class="accordion" id="clusterAccordion">
+                            {% for cluster in cluster_details %}
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading{{ cluster.id }}">
+                                        <button class="accordion-button {% if loop.index != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ cluster.id }}" aria-expanded="{% if loop.index == 1 %}true{% else %}false{% endif %}" aria-controls="collapse{{ cluster.id }}">
+                                            {{ cluster.name }} ({{ cluster.total_data }} data)
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ cluster.id }}" class="accordion-collapse collapse {% if loop.index == 1 %}show{% endif %}" aria-labelledby="heading{{ cluster.id }}" data-bs-parent="#clusterAccordion">
+                                        <div class="accordion-body">
+                                            <p><strong>Total Data:</strong> {{ cluster.total_data }}</p>
+                                            {% if cluster.rata_rata_usia != 'N/A' %}<p><strong>Rata-rata Usia:</strong> {{ "%.2f" | format(cluster.rata_rata_usia) }}</p>{% endif %}
+                                            {% if cluster.rata_rata_bulan != 'N/A' %}<p><strong>Rata-rata Bulan:</strong> {{ "%.2f" | format(cluster.rata_rata_bulan) }}</p>{% endif %}
+                                            
+                                            <h6>Distribusi Kategori:</h6>
+                                            <ul>
+                                                {% for key, value in cluster.items() %}
+                                                    {% if key.startswith('distribusi_') %}
+                                                        <li><strong>{{ key.replace('distribusi_', '').replace('_', ' ').title() }}:</strong>
+                                                            <ul>
+                                                                {% for item, count in value.items() %}
+                                                                    <li>{{ item }}: {{ count }} ({{ "%.2f" | format((count / cluster.total_data) * 100) }}%)</li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Detail klaster akan ditampilkan di sini setelah klasterisasi berhasil dijalankan.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    Pratinjau Data Klaster Terbaru
+                </div>
+                <div class="card-body">
+                    {{ table_preview_html | safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

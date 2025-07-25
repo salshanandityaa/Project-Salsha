@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Laporan Klasterisasi Historis - Run {{ historical_run.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-4 text-gray-800">Laporan Klasterisasi Historis - Run ID: {{ historical_run.id }}</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Ringkasan Hasil Klasterisasi Historis -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Ringkasan Klasterisasi Historis</h6>
+        </div>
+        <div class="card-body">
+            <p><strong>Tanggal & Waktu Klasterisasi:</strong> {{ historical_run.timestamp.strftime('%d-%m-%Y %H:%M:%S') }}</p>
+            <p><strong>Jumlah Klaster (K):</strong> {{ historical_run.k_value }}</p>
+            <p><strong>Silhouette Score:</strong> {{ "%.2f" | format(historical_run.silhouette_score_value) if historical_run.silhouette_score_value is not none else 'N/A' }}</p>
+            <p><strong>Fitur yang Digunakan:</strong> {{ historical_run.features_used if historical_run.features_used else 'N/A' }}</p>
+        </div>
+    </div>
+
+    <!-- Visualisasi Klaster Historis -->
+    {% if plot_data_json %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Visualisasi Klaster Historis</h6>
+        </div>
+        <div class="card-body">
+            <div id="historicalClusterPlot"></div>
+            <p class="mt-3 text-muted">
+                Plot di atas adalah visualisasi klasterisasi dari run klasterisasi ID {{ historical_run.id }}.
+            </p>
+        </div>
+    </div>
+    {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Visualisasi Klaster Historis</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-info">Visualisasi klaster untuk run ini tidak tersedia.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Detail Setiap Klaster Historis -->
+    <h2 class="mb-4">Detail Setiap Klaster (Run ID: {{ historical_run.id }})</h2>
+    {% if cluster_details %}
+    <div class="row">
+        {% for cluster in cluster_details %}
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 bg-info text-white">
+                    <h6 class="m-0 font-weight-bold">{{ cluster.name }} (Total Data: {{ cluster.total_data }})</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>Rata-rata Usia:</strong> {{ "%.2f" | format(cluster.rata_rata_usia) if cluster.rata_rata_usia != 'N/A' else 'N/A' }}</p>
+                    <p><strong>Rata-rata Bulan:</strong> {{ "%.2f" | format(cluster.rata_rata_bulan) if cluster.rata_rata_bulan != 'N/A' else 'N/A' }}</p>
+                    
+                    <h6>Distribusi Fitur Kategorikal:</h6>
+                    <ul>
+                        {% if cluster.distribusi_status_pensiun %}
+                            <li><strong>Status Pensiun:</strong>
+                                <ul>
+                                    {% for status, count in cluster.distribusi_status_pensiun.items() %}
+                                        <li>{{ status | title }}: {{ count }} data</li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if cluster.distribusi_jenis_pekerjaan %}
+                            <li><strong>Jenis Pekerjaan:</strong>
+                                <ul>
+                                    {% for jenis, count in cluster.distribusi_jenis_pekerjaan.items() %}
+                                        <li>{{ jenis | title }}: {{ count }} data</li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                         {% if cluster.distribusi_cabang %}
+                            <li><strong>Cabang:</strong>
+                                <ul>
+                                    {% for cabang, count in cluster.distribusi_cabang.items() %}
+                                        <li>{{ cabang | title }}: {{ count }} data</li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                         {% if cluster.distribusi_mitra %}
+                            <li><strong>Mitra:</strong>
+                                <ul>
+                                    {% for mitra, count in cluster.distribusi_mitra.items() %}
+                                        <li>{{ mitra | title }}: {{ count }} data</li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                        {% if cluster.distribusi_status_auten %}
+                            <li><strong>Status Autentikasi:</strong>
+                                <ul>
+                                    {% for status, count in cluster.distribusi_status_auten.items() %}
+                                        <li>{{ status | title }}: {{ count }} data</li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Detail Setiap Klaster Historis</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-info">Detail setiap klaster untuk run ini tidak ditemukan.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Data Pensiun dalam Run ini -->
+    <h2 class="mb-4 mt-5">Data Pensiun dalam Run ID: {{ historical_run.id }}</h2>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Daftar Data yang Diklaster dalam Run ini (10 Baris Pertama)</h6>
+        </div>
+        <div class="card-body">
+            {% if data_for_this_run %}
+            <div class="table-responsive">
+                <table class="table table-bordered" id="historicalDataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Nomor Pensiun</th>
+                            <th>Penerima</th>
+                            <th>Usia</th>
+                            <th>Klaster</th>
+                            <th>Status Auten</th>
+                            <!-- Add more columns as needed -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in data_for_this_run %}
+                        <tr>
+                            <td>{{ data.nomor_pensiun }}</td>
+                            <td>{{ data.penerima }}</td>
+                            <td>{{ data.usia }}</td>
+                            <td>{{ data.cluster_name }}</td>
+                            <td>{{ data.status_auten }}</td>
+                            <!-- Add more data fields -->
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-info">Tidak ada data pensiun yang terkait dengan run klasterisasi ini.</p>
+            {% endif %}
+        </div>
+    </div>
+
+
+    <!-- Opsi Unduh untuk Laporan Historis -->
+    <div class="mt-4 mb-4">
+        <a href="{{ url_for('download_excel_historical_cluster_data', cluster_run_id=historical_run.id) }}" class="btn btn-success me-2">
+            <i class="fas fa-file-excel"></i> Unduh Data Klaster (Excel)
+        </a>
+        <a href="{{ url_for('download_pdf_global_report', cluster_run_id=historical_run.id) }}" class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> Unduh Laporan (PDF)
+        </a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var plotDataJsonString = "{{ plot_data_json | tojson | safe }}";
+            
+            if (plotDataJsonString && plotDataJsonString !== 'null' && plotDataJsonString !== '""') {
+                try {
+                    var plotDataJson = JSON.parse(plotDataJsonString);
+                    var plotDiv = document.getElementById('historicalClusterPlot');
+                    Plotly.newPlot(plotDiv, plotDataJson.data, plotDataJson.layout, {responsive: true});
+                } catch (e) {
+                    console.error("Error parsing plot data JSON for historical report:", e);
+                    document.getElementById('historicalClusterPlot').innerHTML = "<p class='text-danger'>Gagal memuat plot visualisasi.</p>";
+                }
+            } else {
+                console.log("No historical cluster plot data available.");
+                document.getElementById('historicalClusterPlot').innerHTML = "<p class='text-info'>Visualisasi klaster untuk run ini tidak tersedia atau tidak ada variasi data yang cukup untuk plot.</p>";
+            }
+
+            if (document.getElementById('historicalDataTable')) {
+                new simpleDatatables.DataTable("#historicalDataTable");
+            }
+        });
+    </script>
+{% endblock %}

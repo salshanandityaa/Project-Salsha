@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Klasterisasi Pensiun{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <h1 class="h3 mb-4 text-gray-800">Detail Klasterisasi Data Pensiun: {{ data_item.nomor_pensiun }}</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-primary text-white">
+            <h6 class="m-0 font-weight-bold">Informasi Data Pensiun</h6>
+        </div>
+        <div class="card-body">
+            <p><strong>Nomor Pensiun:</strong> {{ data_item.nomor_pensiun }}</p>
+            <p><strong>Penerima:</strong> {{ data_item.penerima }}</p>
+            <p><strong>Status Pensiun:</strong> {{ data_item.status_pensiun }}</p>
+            <p><strong>Cabang:</strong> {{ data_item.cabang }}</p>
+            <p><strong>Mitra:</strong> {{ data_item.mitra }}</p>
+            <p><strong>Status Autentikasi:</strong> {{ data_item.status_auten }}</p>
+            <p><strong>Bulan:</strong> {{ data_item.bulan }}</p>
+            <p><strong>Usia:</strong> {{ data_item.usia }}</p>
+            <p><strong>Jenis Pekerjaan:</strong> {{ data_item.jenis_pekerjaan }}</p>
+            <p><strong>Klaster Ditemukan:</strong> 
+                {% if data_item.cluster_name %}
+                    <span class="badge bg-info text-white">{{ data_item.cluster_name }}</span>
+                {% else %}
+                    <span class="badge bg-secondary">Belum Diklaster</span>
+                {% endif %}
+            </p>
+            <p><strong>Waktu Unggah:</strong> {{ data_item.waktu_upload.strftime('%d-%m-%Y %H:%M:%S') if data_item.waktu_upload else 'N/A' }}</p>
+        </div>
+    </div>
+
+    <!-- Penjelasan Klaster -->
+    {% if selected_cluster_detail %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-success text-white">
+            <h6 class="m-0 font-weight-bold">Penjelasan Klaster {{ selected_cluster_detail.name }}</h6>
+        </div>
+        <div class="card-body">
+            <p>Data ini termasuk dalam **{{ selected_cluster_detail.name }}**, yang memiliki karakteristik sebagai berikut:</p>
+            <p><strong>Total Data dalam Klaster ini:</strong> {{ selected_cluster_detail.total_data }}</p>
+            <p><strong>Rata-rata Usia dalam Klaster:</strong> {{ "%.2f" | format(selected_cluster_detail.rata_rata_usia) if selected_cluster_detail.rata_rata_usia != 'N/A' else 'N/A' }}</p>
+            <p><strong>Rata-rata Bulan dalam Klaster:</strong> {{ "%.2f" | format(selected_cluster_detail.rata_rata_bulan) if selected_cluster_detail.rata_rata_bulan != 'N/A' else 'N/A' }}</p>
+            
+            <h6>Distribusi Fitur Kategorikal dalam Klaster:</h6>
+            <ul>
+                {% if selected_cluster_detail.distribusi_status_pensiun %}
+                    <li><strong>Status Pensiun:</strong>
+                        <ul>
+                            {% for status, count in selected_cluster_detail.distribusi_status_pensiun.items() %}
+                                <li>{{ status | title }}: {{ count }} data</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if selected_cluster_detail.distribusi_jenis_pekerjaan %}
+                    <li><strong>Jenis Pekerjaan:</strong>
+                        <ul>
+                            {% for jenis, count in selected_cluster_detail.distribusi_jenis_pekerjaan.items() %}
+                                <li>{{ jenis | title }}: {{ count }} data</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+                 {% if selected_cluster_detail.distribusi_cabang %}
+                    <li><strong>Cabang:</strong>
+                        <ul>
+                            {% for cabang, count in selected_cluster_detail.distribusi_cabang.items() %}
+                                <li>{{ cabang | title }}: {{ count }} data</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+                 {% if selected_cluster_detail.distribusi_mitra %}
+                    <li><strong>Mitra:</strong>
+                        <ul>
+                            {% for mitra, count in selected_cluster_detail.distribusi_mitra.items() %}
+                                <li>{{ mitra | title }}: {{ count }} data</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+                {% if selected_cluster_detail.distribusi_status_auten %}
+                    <li><strong>Status Autentikasi:</strong>
+                        <ul>
+                            {% for status, count in selected_cluster_detail.distribusi_status_auten.items() %}
+                                <li>{{ status | title }}: {{ count }} data</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+            </ul>
+            <p class="mt-3">
+                Klaster ini mewakili pola klaim pensiunan dengan karakteristik yang dijelaskan di atas. Analisis lebih lanjut pada klaster ini dapat membantu dalam pengambilan keputusan yang lebih tepat.
+            </p>
+        </div>
+    </div>
+    {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Penjelasan Klaster</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-info">Detail klaster untuk data ini tidak ditemukan. Pastikan klasterisasi telah dijalankan.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Visualisasi Klaster Global (dari klasterisasi terakhir) -->
+    {% if plot_data_json_global %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Visualisasi Klaster Global</h6>
+        </div>
+        <div class="card-body">
+            <div id="globalClusterPlot"></div>
+            <p class="mt-3 text-muted">
+                Plot di atas adalah visualisasi klasterisasi dari seluruh dataset terakhir yang diunggah. Titik data individu ini berada dalam klaster yang ditunjukkan oleh warnanya.
+            </p>
+        </div>
+    </div>
+    {% else %}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Visualisasi Klaster Global</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-info">Visualisasi klaster global tidak tersedia atau tidak ada variasi data yang cukup untuk plot.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Opsi Unduh -->
+    <div class="mt-4 mb-4">
+        <a href="{{ url_for('download_excel_detail', nomor_pensiun=data_item.nomor_pensiun) }}" class="btn btn-success me-2">
+            <i class="fas fa-file-excel"></i> Unduh Detail Data Ini (Excel)
+        </a>
+        <a href="{{ url_for('download_pdf_detail_data', nomor_pensiun=data_item.nomor_pensiun) }}" class="btn btn-danger ms-2">
+            <i class="fas fa-file-pdf"></i> Unduh Laporan PDF
+        </a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var plotDataJsonString = "{{ plot_data_json_global | tojson | safe }}";
+            
+            if (plotDataJsonString && plotDataJsonString !== 'null' && plotDataJsonString !== '""') {
+                try {
+                    var plotDataJson = JSON.parse(plotDataJsonString);
+                    var plotDiv = document.getElementById('globalClusterPlot');
+                    Plotly.newPlot(plotDiv, plotDataJson.data, plotDataJson.layout, {responsive: true});
+                } catch (e) {
+                    console.error("Error parsing plot data JSON:", e);
+                    document.getElementById('globalClusterPlot').innerHTML = "<p class='text-danger'>Gagal memuat plot visualisasi.</p>";
+                }
+            } else {
+                console.log("No global cluster plot data available.");
+                document.getElementById('globalClusterPlot').innerHTML = "<p class='text-info'>Visualisasi klaster global tidak tersedia atau tidak ada variasi data yang cukup untuk plot.</p>";
+            }
+        });
+    </script>
+{% endblock %}

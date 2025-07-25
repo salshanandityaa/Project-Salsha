@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Kancab{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Dashboard Kancab {% if user_cabang %}: {{ user_cabang }}{% endif %}</h1>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if user_cabang %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Data Pensiun (Cabang)</h5>
+                <p class="card-text fs-3">{{ stats.total_data }} <i class="fas fa-database float-end"></i></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Sudah Autentikasi (Cabang)</h5>
+                <p class="card-text fs-3">{{ stats.sudah_auten }} <i class="fas fa-check-circle float-end"></i></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Belum Autentikasi (Cabang)</h5>
+                <p class="card-text fs-3">{{ stats.belum_auten }} <i class="fas fa-hourglass-half float-end"></i></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Gagal Autentikasi (Cabang)</h5>
+                <p class="card-text fs-3">{{ stats.gagal_auten }} <i class="fas fa-times-circle float-end"></i></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                Distribusi Status Autentikasi (Cabang {{ user_cabang }})
+            </div>
+            <div class="card-body">
+                {{ plot_status_auten_div | safe }}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                Distribusi Jenis Pekerjaan (Cabang {{ user_cabang }})
+            </div>
+            <div class="card-body">
+                {{ plot_jenis_pekerjaan_div | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                Distribusi Status Pensiun (Cabang {{ user_cabang }})
+            </div>
+            <div class="card-body">
+                {{ plot_status_pensiun_div | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">Pensiunan yang Perlu Perhatian (Cabang {{ user_cabang }})</h5>
+            </div>
+            <div class="card-body">
+                {% if pensiunan_perlu_perhatian %}
+                <p class="text-muted">Daftar pensiunan di cabang Anda yang berstatus 'Belum Autentikasi':</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="pensiunanPerhatianTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Nomor Pensiun</th>
+                                <th>Penerima</th>
+                                <th>Usia</th>
+                                <th>Status Autentikasi</th>
+                                <th>Klaster</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in pensiunan_perlu_perhatian %}
+                            <tr>
+                                <td>{{ data.nomor_pensiun }}</td>
+                                <td>{{ data.penerima }}</td>
+                                <td>{{ data.usia }}</td>
+                                <td><span class="badge bg-warning text-dark">{{ data.status_auten }}</span></td>
+                                <td>{{ data.cluster_name if data.cluster_name else 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ url_for('report_detail_page', nomor_pensiun=data.nomor_pensiun) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i> Detail
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-info">Tidak ada pensiunan yang perlu perhatian khusus di cabang ini saat ini.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+    <div class="alert alert-danger" role="alert">
+        Informasi cabang tidak tersedia untuk pengguna ini. Harap hubungi Administrator untuk mengatur cabang Anda.
+    </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('pensiunanPerhatianTable')) {
+                new simpleDatatables.DataTable("#pensiunanPerhatianTable");
+            }
+        });
+    </script>
+{% endblock %}
